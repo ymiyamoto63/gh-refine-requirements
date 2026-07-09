@@ -4,6 +4,8 @@
 
 Claude Code と GitHub Copilot の両方で、**同一の SKILL.md** がそのまま動く（Agent Skills 形式）。dev-pipeline のような2形式生成は不要。
 
+リポジトリ名は `gh-refine-requirements`（[GitHub CLI 拡張機能の命名規約](https://docs.github.com/en/github-cli/github-cli/creating-github-cli-extensions)により `gh-` prefix が必須）。スキル自体の名前は `refine-requirements` のまま。
+
 ## 特徴
 
 - **質問する前に調べる** — README・`docs/pipeline-config.md`・既存コードを先に調査し、コードを読めば分かることは質問しない
@@ -17,7 +19,8 @@ Claude Code と GitHub Copilot の両方で、**同一の SKILL.md** がその�
 ## 構成
 
 ```
-refine-requirements/
+gh-refine-requirements/
+├── gh-refine-requirements    … gh CLI 拡張機能のエントリポイント（bash）
 ├── skills/
 │   └── refine-requirements/
 │       └── SKILL.md          … スキル本体（Claude Code / Copilot 共通）
@@ -27,6 +30,39 @@ refine-requirements/
 ```
 
 ## インストール
+
+### GitHub Copilot（`gh` コマンド・対象プロジェクト単位・推奨）
+
+[GitHub CLI](https://cli.github.com/) が入っていれば、拡張機能として一度インストールするだけでどのプロジェクトにも使い回せる。
+
+```bash
+gh extension install ymiyamoto63/gh-refine-requirements
+```
+
+以降、対象プロジェクトのルートで実行するとそのプロジェクトの `.github/skills/refine-requirements/` にインストールされる。
+
+```bash
+cd <target-project>
+gh refine-requirements
+```
+
+カレントディレクトリ以外に入れたい場合は引数でパスを渡す: `gh refine-requirements <target-project>`。
+
+更新時は `gh extension upgrade refine-requirements`。
+
+拡張機能はエントリポイントが bash スクリプトのため、実行には bash が必要（macOS / Linux はそのまま、Windows は Git Bash・WSL 経由）。VS Code / Copilot CLI の Agent Skills サポートが前提。
+
+### GitHub Copilot（`gh` を使わない場合）
+
+```powershell
+# Windows (PowerShell) — <target-project> は開発対象リポジトリのルート
+.\tools\install.ps1 -CopilotTarget <target-project>
+```
+
+```bash
+# macOS / Linux
+./tools/install.sh --copilot-target <target-project>
+```
 
 ### Claude Code（ユーザーグローバル）
 
@@ -41,22 +77,6 @@ refine-requirements/
 ```
 
 `~/.claude/skills/refine-requirements/` にコピーされる。配置後、Claude Code の再起動が必要。
-
-### GitHub Copilot（対象プロジェクト単位）
-
-対象プロジェクトの `.github/skills/` に配置する。
-
-```powershell
-# Windows (PowerShell) — <target-project> は開発対象リポジトリのルート
-.\tools\install.ps1 -CopilotTarget <target-project>
-```
-
-```bash
-# macOS / Linux
-./tools/install.sh --copilot-target <target-project>
-```
-
-VS Code / Copilot CLI の Agent Skills サポートが前提。
 
 ## 使い方
 

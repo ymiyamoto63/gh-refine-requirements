@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# gh CLI extension entry point.
+# Installs the refine-requirements skill for GitHub Copilot into the target
+# repo's .github/skills/ directory, so `gh refine-requirements` run from
+# inside a project installs the skill for that project.
+#
+# Usage:
+#   gh refine-requirements [target-dir]   # default target-dir: .
+set -euo pipefail
+
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+skill_src="$script_dir/skills/refine-requirements"
+
+if [[ ! -f "$skill_src/SKILL.md" ]]; then
+  echo "error: skill source not found at $skill_src (extension installation is broken)" >&2
+  exit 1
+fi
+
+target="${1:-.}"
+if [[ ! -d "$target" ]]; then
+  echo "error: target directory not found: $target" >&2
+  exit 1
+fi
+
+dest="$target/.github/skills/refine-requirements"
+mkdir -p "$dest"
+cp -R "$skill_src/." "$dest/"
+echo "Installed refine-requirements skill for GitHub Copilot: $dest"
