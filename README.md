@@ -4,7 +4,7 @@
 
 Claude Code と GitHub Copilot の両方で、**同一の SKILL.md** がそのまま動く（Agent Skills 形式）。dev-pipeline のような2形式生成は不要。
 
-リポジトリ名は `gh-refine-requirements`（[GitHub CLI 拡張機能の命名規約](https://docs.github.com/en/github-cli/github-cli/creating-github-cli-extensions)により `gh-` prefix が必須）。スキル自体の名前は `refine-requirements` のまま。
+スキルは `skills/refine-requirements/SKILL.md` に置かれており、[Agent Skills 仕様](https://agentskills.io/specification)の `skills/*/SKILL.md` 規約に従っているため、`gh skill install` でそのままインストールできる。リポジトリ名の `gh-` prefix は旧 gh CLI 拡張機能時代の名残（拡張機能は非推奨、後述）。スキル自体の名前は `refine-requirements`。
 
 ## 特徴
 
@@ -21,63 +21,62 @@ Claude Code と GitHub Copilot の両方で、**同一の SKILL.md** がその�
 
 ```
 gh-refine-requirements/
-├── gh-refine-requirements    … gh CLI 拡張機能のエントリポイント（bash）
+├── gh-refine-requirements    … 旧 gh CLI 拡張機能のエントリポイント（非推奨）
 ├── skills/
 │   └── refine-requirements/
 │       └── SKILL.md          … スキル本体（Claude Code / Copilot 共通）
 └── tools/
-    ├── install.ps1           … インストールスクリプト（Windows）
+    ├── install.ps1           … インストールスクリプト（gh が使えない場合の代替・Windows）
     └── install.sh            … 同上（macOS / Linux / git bash）
 ```
 
 ## インストール
 
-### GitHub Copilot（`gh` コマンド・対象プロジェクト単位・推奨）
+[GitHub CLI](https://cli.github.com/) **v2.90.0 以降**の `gh skill install` を使う（推奨）。
 
-[GitHub CLI](https://cli.github.com/) が入っていれば、拡張機能として一度インストールするだけでどのプロジェクトにも使い回せる。
+### GitHub Copilot（対象プロジェクト単位）
 
-```bash
-gh extension install ymiyamoto63/gh-refine-requirements
-```
-
-以降、対象プロジェクトのルートで実行するとそのプロジェクトの `.github/skills/refine-requirements/` にインストールされる。
+対象プロジェクトのルートで:
 
 ```bash
-cd <target-project>
-gh refine-requirements
+gh skill install ymiyamoto63/gh-refine-requirements refine-requirements
 ```
 
-カレントディレクトリ以外に入れたい場合は引数でパスを渡す: `gh refine-requirements <target-project>`。
-
-更新時は `gh extension upgrade refine-requirements`。
-
-拡張機能はエントリポイントが bash スクリプトのため、実行には bash が必要（macOS / Linux はそのまま、Windows は Git Bash・WSL 経由）。VS Code / Copilot CLI の Agent Skills サポートが前提。
-
-### GitHub Copilot（`gh` を使わない場合）
-
-```powershell
-# Windows (PowerShell) — <target-project> は開発対象リポジトリのルート
-.\tools\install.ps1 -CopilotTarget <target-project>
-```
-
-```bash
-# macOS / Linux
-./tools/install.sh --copilot-target <target-project>
-```
+プロジェクトの `.agents/skills/refine-requirements/` にインストールされる（Copilot / Cursor / Codex / Gemini CLI などが共有で読むディレクトリ）。
 
 ### Claude Code（ユーザーグローバル）
 
+```bash
+gh skill install ymiyamoto63/gh-refine-requirements refine-requirements --agent claude-code --scope user
+```
+
+`~/.claude/skills/refine-requirements/` にインストールされる。配置後、Claude Code の再起動が必要。プロジェクト単位で入れたい場合は `--scope user` を外す（`.claude/skills/` に入る）。
+
+### 更新
+
+```bash
+gh skill update
+```
+
+インストール済みスキルの frontmatter に出所（リポジトリ・ref・SHA）が記録されており、これを元に更新される。
+
+### `gh skill` が使えない場合の代替
+
+gh CLI が v2.90.0 未満、または使えない環境では、同梱スクリプトでコピーできる。
+
 ```powershell
 # Windows (PowerShell)
-.\tools\install.ps1
+.\tools\install.ps1                                  # Claude Code（~/.claude/skills/）
+.\tools\install.ps1 -CopilotTarget <target-project>  # Copilot（<target-project>/.github/skills/）
 ```
 
 ```bash
 # macOS / Linux
-./tools/install.sh
+./tools/install.sh                                   # Claude Code
+./tools/install.sh --copilot-target <target-project> # Copilot
 ```
 
-`~/.claude/skills/refine-requirements/` にコピーされる。配置後、Claude Code の再起動が必要。
+旧方式の gh CLI 拡張機能（`gh extension install ymiyamoto63/gh-refine-requirements` → `gh refine-requirements`）は非推奨。動作はするが、今後は `gh skill install` を使うこと。
 
 ## 使い方
 

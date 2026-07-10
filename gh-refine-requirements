@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
-# gh CLI extension entry point.
+# gh CLI extension entry point. DEPRECATED — use `gh skill install` instead:
+#   gh skill install ymiyamoto63/gh-refine-requirements refine-requirements
+# (requires gh v2.90.0+). This entry point is kept so existing extension
+# installs keep working, but it will not gain new features.
+#
 # Installs the refine-requirements skill for GitHub Copilot into the target
 # repo's .github/skills/ directory, so `gh refine-requirements` run from
 # inside a project installs the skill for that project.
@@ -7,6 +11,8 @@
 # Usage:
 #   gh refine-requirements [target-dir]   # default target-dir: .
 set -euo pipefail
+
+echo "warning: 'gh refine-requirements' is deprecated; use 'gh skill install ymiyamoto63/gh-refine-requirements refine-requirements' (gh v2.90.0+) instead" >&2
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 skill_src="$script_dir/skills/refine-requirements"
