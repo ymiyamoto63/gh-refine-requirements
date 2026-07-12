@@ -1,6 +1,6 @@
 ---
 name: refine-requirements
-description: Turn a rough, business-level requirements memo into a design-ready requirements document through a structured multiple-choice interview (max 30 questions), saved to docs/requirements/<feature-slug>.md. Use this skill whenever the user provides draft or rough requirements, a feature memo from a business manager or stakeholder, or asks to 要件定義 / 要件を詰める / refine requirements / create a requirements document — even if they don't name this skill explicitly. Do not use it for tasks that are already fully specified or for pure research questions.
+description: Turn a rough, business-level requirements memo into a design-ready requirements document through a structured multiple-choice interview. Use this skill whenever the user provides draft or rough requirements, a feature memo from a business manager or stakeholder, or asks to 要件定義 / 要件を詰める / refine requirements / create a requirements document — even if they don't name this skill explicitly. Do not use it for tasks that are already fully specified or for pure research questions.
 ---
 
 # refine-requirements
@@ -19,6 +19,8 @@ Never ask a question you could answer yourself. Before the interview, survey the
 
 - `README`, `docs/` (especially `docs/pipeline-config.md` and existing `docs/requirements/*.md` if present) for conventions and prior decisions.
 - The code areas the feature touches: existing similar features, screen/routing structure, API patterns, data model. This is what grounds your recommendations later.
+
+Keep the survey proportional: prefer targeted searches (Glob/Grep) over reading whole files, and read a file fully only where the feature directly touches it. The survey is done the moment you can ground your recommendations — understanding the whole repository is not the goal. If the environment provides a read-only exploration subagent (e.g. Explore), delegating the survey to it and keeping only its summary in context is a good trade.
 
 Resolve everything you can from this survey. What remains is the interview material. Keep track of ambiguities you resolve from the survey *instead of* asking — they are inferences, not user decisions, and go into the 前提 list of the 制約 section so the user can veto a wrong inference when reviewing the document.
 
@@ -41,15 +43,17 @@ The checklist governs *enumeration only* — whether an item becomes a question 
 
 Order the combined list by impact — questions whose answer forks the spec widely come first — so the budget is spent where it matters most.
 
-**Budget: 30 questions total, hard cap.** State the running count *before* presenting each round's questions (e.g. `質問 5–8 / 30`), not only in the final wrap-up. Stop early the moment no material ambiguity remains — never pad toward 30. Anything still open when the budget runs out becomes a 未決定事項 (see Step 3).
+**Budget: 30 questions total — a hard cap, not a target.** A typical memo converges in 8–15 questions over 3–4 rounds; only a genuinely large feature should get near 30. State the running count *before* presenting each round's questions (e.g. `質問 5–8 / 30`), not only in the final wrap-up. Stop early the moment no material ambiguity remains — never pad toward the cap. Anything still open when the budget runs out becomes a 未決定事項 (see Step 3).
 
 Present questions in batches of up to 4 related questions per round to reduce round-trips. Each question:
 
 - 2–4 concrete options, mutually exclusive where possible.
-- Mark the recommended option with 「（推奨）」 and a one-line rationale. Ground every recommendation in at least one of: **the stated business goal** (what best serves the memo's 背景・目的), **UI/UX** (what is least surprising for the end user), **implementation difficulty** (what is cheapest/safest to build), or **the repository's current design** (what matches existing patterns you found in Step 1). Say which. A recommendation you cannot ground, don't mark — an ungrounded 推奨 is worse than none.
+- Mark the recommended option with 「（推奨）」 and a one-line rationale. Ground every recommendation in at least one of: **the stated business goal** (what best serves the memo's 背景・目的), **UI/UX** (what is least surprising for the end user), **implementation difficulty** (what is cheapest/safest to build), or **the repository's current design** (what matches existing patterns you found in Step 1). Say which. When the ground is the repository's current design, cite the concrete file or directory you found (e.g. `src/features/export/`) so the claim is checkable. A recommendation you cannot ground, don't mark — an ungrounded 推奨 is worse than none.
 - If the environment provides an `AskUserQuestion` tool, use it (recommended option first, labeled 「（推奨）」). Otherwise — e.g. GitHub Copilot — present the options as a numbered list in chat and wait for the answer before continuing. Free-text answers outside the options are always valid; fold them in as given.
 
 Budget accounting: every option-question actually presented to the user counts, including follow-ups that an answer opens up. Asking for the input memo, proposing a feature split, and confirming a filename do not count. If an answer contradicts the rough memo or an earlier answer, point out the contradiction and confirm which wins before folding it in (this confirmation counts as a question) — a silently absorbed contradiction poisons the whole document.
+
+Record answers as you go: after each round, append one 決定記録 line per answer to the output file (Step 4 path — settle the slug at the first round; if a document for this feature already existed, you are in update mode, see Step 4, and append there) before presenting the next round. A long interview can outlive your context window — the file, not your memory of the conversation, is the durable record, and Step 4 then builds the document around these lines instead of reconstructing decisions.
 
 ## Step 3 — Undecided items
 
@@ -59,7 +63,7 @@ Every question that remains open when the budget is exhausted (or that the user 
 
 Output path: `<project_root>/docs/requirements/<feature-slug>.md`, where `<feature-slug>` is a short kebab-case English slug that captures the feature (e.g. `avatar-upload.md`, `csv-export.md`). Create parent directories if needed. State the filename when you write it; only ask about it if genuinely ambiguous.
 
-**Update mode:** if the file already exists, do not overwrite blindly. Read it first: if it describes a *different* feature that happens to share the slug, pick a different slug instead of merging. If it is an earlier version of this feature, tell the user and fold the new information into the existing document — resolve its 未決定事項 where the new answers apply, update affected sections, and append to 決定記録. Requirements documents get revised, not rewritten.
+**Update mode:** if the file existed before this interview started (your own Step 2 決定記録 draft doesn't count), do not overwrite blindly. Read it first: if it describes a *different* feature that happens to share the slug, pick a different slug instead of merging. If it is an earlier version of this feature, tell the user and fold the new information into the existing document — resolve its 未決定事項 where the new answers apply, update affected sections, and append to 決定記録. Requirements documents get revised, not rewritten.
 
 Write the document content in Japanese unless told otherwise. Use exactly this structure — a section with nothing to say gets 「なし」 rather than being removed, so downstream phases can rely on the shape:
 
@@ -114,9 +118,8 @@ Write the document content in Japanese unless told otherwise. Use exactly this s
 Section-specific notes:
 
 - **FR / AC の ID は安定参照** — downstream phases (design, tests, review) cite them, so never renumber existing IDs when updating.
-- **受け入れ基準** — every FR must be covered by at least one AC; an FR with no AC is a requirement nobody will verify. Cover the main 異常系 paths, not just the happy path. Prefer mechanically checkable conditions; tag each with 自動テスト or 手動確認 so the testing effort is visible up front. This format is compatible with dev-pipeline's requirements-analyst output, so the document can feed straight into a `/dev-pipeline` run.
-- **決定記録** — one line per answered interview question: what was asked, what was chosen, why. This is what lets a designer six months later understand why the spec says what it says. Answers accepted as the recommended default still get a line.
-- **用語集** — business-manager vocabulary is where misunderstandings breed; map each ambiguous business term to the concrete system concept it means here. Skip terms that are unambiguous.
+- **受け入れ基準** — every FR must be covered by at least one AC; an FR with no AC is a requirement nobody will verify. This includes negative FRs (「〜しない」「上限を設けない」) — write an AC that confirms the absent behavior stays absent. Cover the main 異常系 paths, not just the happy path. Prefer mechanically checkable conditions; tag each with 自動テスト or 手動確認 so the testing effort is visible up front. This format is compatible with dev-pipeline's requirements-analyst output, so the document can feed straight into a `/dev-pipeline` run.
+- **決定記録** — one line per answered question (built up during Step 2), including answers accepted as the recommended default. This is what lets a designer six months later understand why the spec says what it says.
 
 ## Wrap-up
 
